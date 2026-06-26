@@ -8,62 +8,61 @@ type Message = {
 };
 
 export default function Home() {
-  const [question, setQuestion] = useState<string>("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState<Message[] | []>([]);
+  const [loading, setLoading] = useState(false);
 
-  // 🧠 ASK AI FUNCTION
   const askAI = async () => {
     if (!question.trim()) return;
 
-    const userMessage: Message = {
-      role: "user",
-      text: question,
-    };
+    const userMsg = { role: "user" as const, text: question };
 
-    const currentQuestion = question;
-
-    // Add user + empty bot message
     setMessages((prev) => [
       ...prev,
-      userMessage,
-      { role: "bot", text: "" },
+      userMsg,
+      { role: "bot" as const, text: "" },
     ]);
 
+    const currentQuestion = question;
     setQuestion("");
     setLoading(true);
 
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/ask?q=${encodeURIComponent(currentQuestion)}`
+        `http://127.0.0.1:8000/ask-stream?q=${encodeURIComponent(
+          currentQuestion
+        )}`
       );
 
-      if (!res.ok) {
-        throw new Error("Backend error");
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+
+      let fullText = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+
+        setMessages((prev) => {
+          const copy = [...prev];
+          copy[copy.length - 1] = {
+            role: "bot" as const,
+            text: fullText,
+          };
+          return copy;
+        });
       }
-
-      const data = await res.json();
-
-      const answer = data.answer || "No response";
-
-      // Fill bot response
-      setMessages((prev) => {
-        const copy = [...prev];
-        copy[copy.length - 1] = {
-          role: "bot",
-          text: answer,
-        };
-        return copy;
-      });
     } catch (err) {
-      setMessages((prev) => {
-        const copy = [...prev];
-        copy[copy.length - 1] = {
+      setMessages((prev) => [
+        ...prev,
+        {
           role: "bot",
           text: "❌ Error connecting to backend",
-        };
-        return copy;
-      });
+        },
+      ]);
     }
 
     setLoading(false);
@@ -73,8 +72,8 @@ export default function Home() {
     <div className="flex flex-col h-screen bg-black text-white">
 
       {/* HEADER */}
-      <div className="p-4 border-b border-gray-800 text-center font-bold text-lg">
-        🧠 RAG Chat (LLaMA 3 + FastAPI)
+      <div className="p-4 border-b border-gray-800 text-center font-bold">
+        🧠 RAG Chat (Streaming + LLaMA 3)
       </div>
 
       {/* CHAT AREA */}
@@ -90,7 +89,7 @@ export default function Home() {
             }`}
           >
             <div
-              className={`px-4 py-2 rounded-2xl max-w-[70%] text-sm whitespace-pre-wrap ${
+              className={`px-4 py-2 rounded-2xl max-w-[70%] whitespace-pre-wrap ${
                 msg.role === "user"
                   ? "bg-blue-600"
                   : "bg-gray-800"
@@ -103,13 +102,13 @@ export default function Home() {
 
         {loading && (
           <div className="text-gray-400 text-sm">
-            AI is thinking...
+            AI is typing...
           </div>
         )}
 
       </div>
 
-      {/* INPUT AREA */}
+      {/* INPUT */}
       <div className="p-4 border-t border-gray-800 flex gap-2">
 
         <input
@@ -117,12 +116,12 @@ export default function Home() {
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && askAI()}
           placeholder="Ask your PDF..."
-          className="flex-1 p-3 rounded-lg bg-gray-900 text-white outline-none border border-gray-700"
+          className="flex-1 p-3 rounded-lg bg-gray-900 text-white"
         />
 
         <button
           onClick={askAI}
-          className="bg-blue-600 px-5 py-3 rounded-lg hover:bg-blue-700"
+          className="bg-blue-600 px-5 py-3 rounded-lg"
         >
           Send
         </button>
