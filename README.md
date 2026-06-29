@@ -3,7 +3,10 @@
 A full-stack Retrieval-Augmented Generation (RAG) application that lets users upload a PDF and ask questions about its contents. The application extracts text from the document, creates embeddings, retrieves the most relevant sections, and generates a streamed answer using a locally running Llama 3 model through Ollama.
 cdkckw
 cndvk
-nieni
+nienivwvkwm
+vnwkvnwk
+injn jiem
+
 ## Features
 
 - Upload PDFs through file selection or drag and drop
