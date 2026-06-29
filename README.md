@@ -4,7 +4,7 @@ A full-stack Retrieval-Augmented Generation (RAG) application that lets users up
 cdkckw
 cndvk
 nienivwvkwm
-vnwkv
+vnwcewcjewnjkv
 ## Features
 
 - Upload PDFs through file selection or drag and drop
